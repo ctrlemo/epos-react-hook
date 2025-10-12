@@ -39,7 +39,7 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/ctrlemo/epos-react-hook.git"
+    "url": "git+https://github.com/ctrlemo/epos-react-hook.git"
   },
   "bugs": {
     "url": "https://github.com/ctrlemo/epos-react-hook/issues"
@@ -62,5 +62,8 @@
     "rollup": "^3.0.0",
     "rollup-plugin-peer-deps-external": "^2.2.4",
     "vitest": "^3.2.4"
+  },
+  "publishConfig": {
+    "access": "public"
   }
 }
