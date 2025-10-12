@@ -1,0 +1,48 @@
+{
+  "name": "@ctrlemo/epos-react-hook",
+  "version": "1.0.0",
+  "description": "React hook for managing Epson ePOS printer connections, and in the future other ePOS printer brands",
+  "main": "dist/index.js",
+  "module": "dist/index.esm.js",
+  "types": "dist/index.d.ts",
+  "files": [
+    "dist/"
+  ],
+  "scripts": {
+    "build": "rollup -c",
+    "dev": "rollup -c -w",
+    "prepublishOnly": "npm run build",
+    "test": "echo \"No tests yet\""
+  },
+  "keywords": [
+    "react",
+    "hook",
+    "epson",
+    "epos",
+    "printer",
+    "thermal-printer"
+  ],
+  "author": "Emory Mercera <ctrlemo@gmail.com>",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/ctrlemo/epos-react-hook.git"
+  },
+  "bugs": {
+    "url": "https://github.com/ctrlemo/epos-react-hook/issues"
+  },
+  "homepage": "https://github.com/ctrlemo/epos-react-hook#readme",
+  "peerDependencies": {
+    "react": ">=16.8.0"
+  },
+  "devDependencies": {
+    "@rollup/plugin-node-resolve": "^15.0.0",
+    "@rollup/plugin-commonjs": "^24.0.0",
+    "@rollup/plugin-babel": "^6.0.0",
+    "@babel/core": "^7.20.0",
+    "@babel/preset-env": "^7.20.0",
+    "@babel/preset-react": "^7.18.0",
+    "rollup": "^3.0.0",
+    "rollup-plugin-peer-deps-external": "^2.2.4"
+  }
+}
