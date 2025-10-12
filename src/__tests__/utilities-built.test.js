@@ -1,13 +1,12 @@
+import { describe, test, expect, beforeAll, beforeEach } from "vitest";
 /**
  * Simple tests for the built package utilities
  */
 
-describe("Utilities (from built package)", () => {
-  const {
-    isValidPrinterStatus,
-    PRINTER_STATUS,
-  } = require("../../dist/index.js");
+import { describe, test, expect } from "vitest";
+import { isValidPrinterStatus, PRINTER_STATUS } from "../../dist/index.esm.js";
 
+describe("Utilities (from built package)", () => {
   describe("isValidPrinterStatus", () => {
     test("returns true for valid printer statuses", () => {
       expect(isValidPrinterStatus(PRINTER_STATUS.IDLE)).toBe(true);

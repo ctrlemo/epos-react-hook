@@ -1,13 +1,12 @@
+import { describe, test, expect, beforeAll, beforeEach } from "vitest";
 /**
  * Simple tests for the built package constants
  */
 
-describe("Constants (from built package)", () => {
-  const {
-    PRINTER_STATUS,
-    PRINTER_STATUS_LABELS,
-  } = require("../../dist/index.js");
+import { describe, test, expect } from "vitest";
+import { PRINTER_STATUS, PRINTER_STATUS_LABELS } from "../../dist/index.esm.js";
 
+describe("Constants (from built package)", () => {
   describe("PRINTER_STATUS", () => {
     test("contains all expected status values", () => {
       expect(PRINTER_STATUS.IDLE).toBe("idle");

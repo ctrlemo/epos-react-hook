@@ -1,10 +1,12 @@
+import { describe, test, expect, beforeAll, beforeEach } from "vitest";
 /**
  * Simple tests for the built package EposClient
  */
 
-describe("EposClient (from built package)", () => {
-  const { EposClient } = require("../../dist/index.js");
+import { describe, test, expect, beforeEach, vi } from "vitest";
+import { EposClient } from "../../dist/index.esm.js";
 
+describe("EposClient (from built package)", () => {
   let client;
   const mockOptions = {
     sdkUrl: "/epos-sdk.js",
@@ -14,17 +16,17 @@ describe("EposClient (from built package)", () => {
 
   beforeEach(() => {
     // Clear all mocks and reset state
-    jest.clearAllMocks();
+    vi.clearAllMocks();
 
     // Reset window.epson mock
     global.window.epson = {
-      ePOSDevice: jest.fn().mockImplementation(() => ({
+      ePOSDevice: vi.fn().mockImplementation(() => ({
         DEVICE_TYPE_PRINTER: "PRINTER",
-        connect: jest.fn(),
-        createDevice: jest.fn(),
-        deleteDevice: jest.fn(),
-        disconnect: jest.fn(),
-        isConnected: jest.fn(() => false),
+        connect: vi.fn(),
+        createDevice: vi.fn(),
+        deleteDevice: vi.fn(),
+        disconnect: vi.fn(),
+        isConnected: vi.fn(() => false),
       })),
     };
     global.window.epson.ePOSDevice.DEVICE_TYPE_PRINTER = "PRINTER";

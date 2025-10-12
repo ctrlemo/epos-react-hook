@@ -1,4 +1,4 @@
-require("@testing-library/jest-dom");
+import { vi } from "vitest";
 
 // Mock the Epson SDK since it won't be available in test environment
 global.window = global.window || {};
@@ -9,11 +9,11 @@ global.window.epson = {
   ePOSDevice: function () {
     return {
       DEVICE_TYPE_PRINTER: "PRINTER",
-      connect: jest.fn(),
-      createDevice: jest.fn(),
-      deleteDevice: jest.fn(),
-      disconnect: jest.fn(),
-      isConnected: jest.fn(() => false),
+      connect: vi.fn(),
+      createDevice: vi.fn(),
+      deleteDevice: vi.fn(),
+      disconnect: vi.fn(),
+      isConnected: vi.fn(() => false),
     };
   },
 };
@@ -21,20 +21,20 @@ global.window.epson = {
 global.window.epson.ePOSDevice.DEVICE_TYPE_PRINTER = "PRINTER";
 
 // Mock DOM methods
-global.document.createElement = jest.fn(() => ({
-  addEventListener: jest.fn(),
-  removeEventListener: jest.fn(),
+global.document.createElement = vi.fn(() => ({
+  addEventListener: vi.fn(),
+  removeEventListener: vi.fn(),
   src: "",
   async: false,
   onload: null,
   onerror: null,
 }));
 
-global.document.querySelector = jest.fn(() => null);
+global.document.querySelector = vi.fn(() => null);
 
 // Mock document.body.appendChild - override the property descriptor
 Object.defineProperty(global.document.body, "appendChild", {
-  value: jest.fn(),
+  value: vi.fn(),
   writable: true,
 });
 
@@ -45,12 +45,12 @@ const originalConsoleWarn = console.warn;
 
 beforeEach(() => {
   // Reset all mocks before each test
-  jest.clearAllMocks();
+  vi.clearAllMocks();
 
   // Mock console methods
-  console.log = jest.fn();
-  console.error = jest.fn();
-  console.warn = jest.fn();
+  console.log = vi.fn();
+  console.error = vi.fn();
+  console.warn = vi.fn();
 });
 
 afterEach(() => {

@@ -1,3 +1,4 @@
+import { describe, test, expect, beforeAll, beforeEach } from "vitest";
 /**
  * Package Export Tests
  *
@@ -5,12 +6,14 @@
  * and that they have the correct types and functionality.
  */
 
+import { describe, test, expect, beforeAll } from "vitest";
+
 describe("Package Exports", () => {
   let packageExports;
 
-  beforeAll(() => {
+  beforeAll(async () => {
     // Import from the built distribution
-    packageExports = require("../../dist/index.js");
+    packageExports = await import("../../dist/index.esm.js");
   });
 
   describe("Named Exports", () => {

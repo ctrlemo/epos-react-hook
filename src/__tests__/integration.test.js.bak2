@@ -39,10 +39,8 @@ describe("Package Integration", () => {
     });
   });
 
-  test("EposClient and useEposPrinter work with same parameters", async () => {
-    const { useEposPrinter, EposClient } = await import(
-      "../../dist/index.esm.js"
-    );
+  test("EposClient and useEposPrinter work with same parameters", () => {
+    const { useEposPrinter, EposClient } = import("../../dist/index.esm.js");
 
     const testParams = {
       sdkUrl: "/test-sdk.js",
@@ -60,9 +58,9 @@ describe("Package Integration", () => {
     expect(useEposPrinter.length).toBe(2); // Shows 2 required parameters (third has default value)
   });
 
-  test("package can be used in CommonJS environment", async () => {
-    // This test verifies the built package works with await import()
-    const eposPackage = await import("../../dist/index.esm.js");
+  test("package can be used in CommonJS environment", () => {
+    // This test verifies the built package works with require()
+    const eposPackage = import("../../dist/index.esm.js");
 
     expect(eposPackage).toBeDefined();
     expect(typeof eposPackage).toBe("object");
@@ -81,10 +79,10 @@ describe("Package Integration", () => {
     });
   });
 
-  test("no circular dependencies or conflicts", async () => {
+  test("no circular dependencies or conflicts", () => {
     // Import the package multiple times to ensure no conflicts
-    const import1 = await import("../../dist/index.esm.js");
-    const import2 = await import("../../dist/index.esm.js");
+    const import1 = import("../../dist/index.esm.js");
+    const import2 = import("../../dist/index.esm.js");
 
     // Should be the same reference (cached by Node.js)
     expect(import1).toBe(import2);
@@ -94,8 +92,8 @@ describe("Package Integration", () => {
     expect(import1.PRINTER_STATUS_LABELS).toBe(import2.PRINTER_STATUS_LABELS);
   });
 
-  test("package size and structure is reasonable", async () => {
-    const eposPackage = await import("../../dist/index.esm.js");
+  test("package size and structure is reasonable", () => {
+    const eposPackage = import("../../dist/index.esm.js");
     const exportCount = Object.keys(eposPackage).length;
 
     // Should not export too many things (keeps API clean)
