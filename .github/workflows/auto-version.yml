@@ -18,6 +18,7 @@ jobs:
               uses: actions/checkout@v4
               with:
                   token: ${{ secrets.GITHUB_TOKEN }}
+                  fetch-depth: 0 # Fetch full history for better release notes
 
             - name: Use Node.js 20.x
               uses: actions/setup-node@v4
@@ -37,12 +38,18 @@ jobs:
             - name: Determine version bump type
               id: bump
               run: |
-                  if [[ "${{ github.event.head_commit.message }}" == *"BREAKING CHANGE"* ]] || [[ "${{ github.event.head_commit.message }}" == *"major:"* ]]; then
+                  COMMIT_MSG="${{ github.event.head_commit.message }}"
+                  echo "Analyzing commit: $COMMIT_MSG"
+
+                  if [[ "$COMMIT_MSG" == *"BREAKING CHANGE"* ]] || [[ "$COMMIT_MSG" == *"major:"* ]]; then
                     echo "type=major" >> $GITHUB_OUTPUT
-                  elif [[ "${{ github.event.head_commit.message }}" == *"feat:"* ]] || [[ "${{ github.event.head_commit.message }}" == *"feature:"* ]]; then
+                    echo "🚨 Major version bump detected"
+                  elif [[ "$COMMIT_MSG" == *"feat:"* ]] || [[ "$COMMIT_MSG" == *"feature:"* ]]; then
                     echo "type=minor" >> $GITHUB_OUTPUT
+                    echo "✨ Minor version bump detected"
                   else
                     echo "type=patch" >> $GITHUB_OUTPUT
+                    echo "🔧 Patch version bump detected"
                   fi
 
             - name: Bump version and create tag
@@ -50,21 +57,72 @@ jobs:
               run: |
                   git config --local user.email "action@github.com"
                   git config --local user.name "GitHub Action"
-                  NEW_VERSION=$(npm version ${{ steps.bump.outputs.type }} -m "chore: bump version to %s [skip ci]" | grep -o '[0-9]\+\.[0-9]\+\.[0-9]\+')
+
+                  # Get the current version
+                  CURRENT_VERSION=$(node -p "require('./package.json').version")
+                  echo "Current version: $CURRENT_VERSION"
+
+                  # Bump version
+                  NEW_VERSION=$(npm version ${{ steps.bump.outputs.type }} -m "chore: bump version to %s [skip ci]" | sed 's/^v//')
+                  echo "New version: $NEW_VERSION"
                   echo "new_version=$NEW_VERSION" >> $GITHUB_OUTPUT
+
+                  # Push changes
                   git push origin master --tags
 
+            - name: Generate Release Notes
+              id: release_notes
+              run: |
+                  COMMIT_MSG="${{ github.event.head_commit.message }}"
+                  COMMIT_AUTHOR="${{ github.event.head_commit.author.name }}"
+                  COMMIT_SHA="${{ github.event.head_commit.id }}"
+                  VERSION_TYPE="${{ steps.bump.outputs.type }}"
+
+                  # Create release notes
+                  cat > release_notes.md << EOF
+                  ## 🚀 Automated Release v${{ steps.version.outputs.new_version }}
+
+                  **Version Type:** ${VERSION_TYPE^} release
+                  **Triggered by:** ${COMMIT_AUTHOR}
+                  **Commit:** ${COMMIT_SHA:0:7}
+
+                  ### 📝 Changes
+                  ${COMMIT_MSG}
+
+                  ### 📦 Installation
+                  \`\`\`bash
+                  npm install @ctrlemo/epos-react-hook@${{ steps.version.outputs.new_version }}
+                  \`\`\`
+
+                  ### 🔗 Links
+                  - [npm package](https://www.npmjs.com/package/@ctrlemo/epos-react-hook)
+                  - [GitHub repository](https://github.com/ctrlemo/epos-react-hook)
+
+                  ---
+                  *This release was automatically created by GitHub Actions*
+                  EOF
+
+                  echo "Generated release notes:"
+                  cat release_notes.md
+
             - name: Create Release
-              uses: actions/create-release@v1
-              env:
-                  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+              uses: softprops/action-gh-release@v1
               with:
                   tag_name: v${{ steps.version.outputs.new_version }}
-                  release_name: Release v${{ steps.version.outputs.new_version }}
-                  body: |
-                      Automated release created by GitHub Actions
-
-                      Changes in this Release:
-                      ${{ github.event.head_commit.message }}
+                  name: Release v${{ steps.version.outputs.new_version }}
+                  body_path: release_notes.md
                   draft: false
                   prerelease: false
+                  generate_release_notes: true # Auto-generate additional notes from commits
+              env:
+                  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+            - name: Summary
+              run: |
+                  echo "## 🎉 Auto-Version Bump Complete!" >> $GITHUB_STEP_SUMMARY
+                  echo "" >> $GITHUB_STEP_SUMMARY
+                  echo "**New Version:** v${{ steps.version.outputs.new_version }}" >> $GITHUB_STEP_SUMMARY
+                  echo "**Bump Type:** ${{ steps.bump.outputs.type }}" >> $GITHUB_STEP_SUMMARY
+                  echo "**Release:** [v${{ steps.version.outputs.new_version }}](https://github.com/ctrlemo/epos-react-hook/releases/tag/v${{ steps.version.outputs.new_version }})" >> $GITHUB_STEP_SUMMARY
+                  echo "" >> $GITHUB_STEP_SUMMARY
+                  echo "The package will be automatically published to npm when the release is created." >> $GITHUB_STEP_SUMMARY
