@@ -1,18 +1,21 @@
 {
   "name": "@ctrlemo/epos-react-hook",
+  "type": "module",
   "version": "1.0.0",
-  "description": "React hook for managing Epson ePOS printer connections, and in the future other ePOS printer brands",
+  "description": "React hook for managing Epson ePOS printer connections",
   "main": "dist/index.js",
   "module": "dist/index.esm.js",
-  "types": "dist/index.d.ts",
   "files": [
-    "dist/"
+    "dist/",
+    "README.md"
   ],
   "scripts": {
     "build": "rollup -c",
     "dev": "rollup -c -w",
     "prepublishOnly": "npm run build",
-    "test": "echo \"No tests yet\""
+    "test": "echo \"No tests yet\"",
+    "lint": "echo \"Add linting later\"",
+    "clean": "rm -rf dist"
   },
   "keywords": [
     "react",
@@ -20,7 +23,8 @@
     "epson",
     "epos",
     "printer",
-    "thermal-printer"
+    "thermal-printer",
+    "pos-printer"
   ],
   "author": "Emory Mercera <ctrlemo@gmail.com>",
   "license": "MIT",
@@ -32,6 +36,9 @@
     "url": "https://github.com/ctrlemo/epos-react-hook/issues"
   },
   "homepage": "https://github.com/ctrlemo/epos-react-hook#readme",
+  "engines": {
+    "node": ">=14.0.0"
+  },
   "peerDependencies": {
     "react": ">=16.8.0"
   },
