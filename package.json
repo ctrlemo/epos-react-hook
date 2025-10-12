@@ -21,7 +21,10 @@
     "test:package": "npm run test:built",
     "test:coverage": "vitest run --coverage",
     "lint": "echo \"Add linting later\"",
-    "clean": "rm -rf dist"
+    "clean": "rm -rf dist",
+    "release:patch": "npm version patch && git push origin master --tags",
+    "release:minor": "npm version minor && git push origin master --tags",
+    "release:major": "npm version major && git push origin master --tags"
   },
   "keywords": [
     "react",
