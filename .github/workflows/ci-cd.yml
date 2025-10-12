@@ -6,7 +6,7 @@ on:
     pull_request:
         branches: [master, main]
     release:
-        types: [published]
+        types: [published, created, released] # Accept multiple release types
 
 jobs:
     test:
@@ -47,7 +47,7 @@ jobs:
     publish:
         needs: test
         runs-on: ubuntu-latest
-        if: github.event_name == 'release' && github.event.action == 'published'
+        if: github.event_name == 'release' && !github.event.release.draft && !github.event.release.prerelease
 
         steps:
             - name: Checkout code
@@ -69,7 +69,28 @@ jobs:
             - name: Run tests
               run: npm test
 
+            - name: Debug Release Event
+              run: |
+                  echo "Event name: ${{ github.event_name }}"
+                  echo "Event action: ${{ github.event.action }}"
+                  echo "Release tag: ${{ github.event.release.tag_name }}"
+                  echo "Release name: ${{ github.event.release.name }}"
+                  echo "Release draft: ${{ github.event.release.draft }}"
+                  echo "Release prerelease: ${{ github.event.release.prerelease }}"
+
             - name: Publish to npm
               run: npm publish
               env:
                   NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+            - name: Publish Summary
+              run: |
+                  echo "## 📦 Package Published Successfully!" >> $GITHUB_STEP_SUMMARY
+                  echo "" >> $GITHUB_STEP_SUMMARY
+                  echo "**Version:** ${{ github.event.release.tag_name }}" >> $GITHUB_STEP_SUMMARY
+                  echo "**npm Package:** [@ctrlemo/epos-react-hook](https://www.npmjs.com/package/@ctrlemo/epos-react-hook)" >> $GITHUB_STEP_SUMMARY
+                  echo "" >> $GITHUB_STEP_SUMMARY
+                  echo "### Installation" >> $GITHUB_STEP_SUMMARY
+                  echo "\`\`\`bash" >> $GITHUB_STEP_SUMMARY
+                  echo "npm install @ctrlemo/epos-react-hook@latest" >> $GITHUB_STEP_SUMMARY
+                  echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
