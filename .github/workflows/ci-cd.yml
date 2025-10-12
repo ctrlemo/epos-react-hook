@@ -4,7 +4,11 @@ on:
     pull_request:
         branches: [master, main]
     release:
-        types: [published, created, released] # Accept multiple release types
+        types: [published, created, released, edited] # Added more event types
+    workflow_run: # Also trigger when auto-version completes
+        workflows: ["Auto Version Bump"]
+        types: [completed]
+        branches: [master, main]
 
 jobs:
     test:
@@ -45,7 +49,9 @@ jobs:
     publish:
         needs: test
         runs-on: ubuntu-latest
-        if: github.event_name == 'release' && !github.event.release.draft && !github.event.release.prerelease
+        if: |
+            (github.event_name == 'release') ||
+            (github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success')
 
         steps:
             - name: Checkout code
@@ -67,14 +73,28 @@ jobs:
             - name: Run tests
               run: npm test
 
-            - name: Debug Release Event
+            - name: Debug Event Info
               run: |
                   echo "Event name: ${{ github.event_name }}"
-                  echo "Event action: ${{ github.event.action }}"
-                  echo "Release tag: ${{ github.event.release.tag_name }}"
-                  echo "Release name: ${{ github.event.release.name }}"
-                  echo "Release draft: ${{ github.event.release.draft }}"
-                  echo "Release prerelease: ${{ github.event.release.prerelease }}"
+                  if [ "${{ github.event_name }}" = "release" ]; then
+                    echo "Release action: ${{ github.event.action }}"
+                    echo "Release tag: ${{ github.event.release.tag_name }}"
+                    echo "Release draft: ${{ github.event.release.draft }}"
+                    echo "Release prerelease: ${{ github.event.release.prerelease }}"
+                  elif [ "${{ github.event_name }}" = "workflow_run" ]; then
+                    echo "Workflow run conclusion: ${{ github.event.workflow_run.conclusion }}"
+                    echo "Workflow run name: ${{ github.event.workflow_run.name }}"
+                  fi
+
+            - name: Get latest release info (for workflow_run trigger)
+              if: github.event_name == 'workflow_run'
+              id: latest_release
+              run: |
+                  LATEST_RELEASE=$(curl -s -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+                    "https://api.github.com/repos/${{ github.repository }}/releases/latest")
+                  TAG_NAME=$(echo "$LATEST_RELEASE" | jq -r '.tag_name')
+                  echo "Latest release tag: $TAG_NAME"
+                  echo "tag_name=$TAG_NAME" >> $GITHUB_OUTPUT
 
             - name: Publish to npm
               run: npm publish
@@ -85,7 +105,11 @@ jobs:
               run: |
                   echo "## 📦 Package Published Successfully!" >> $GITHUB_STEP_SUMMARY
                   echo "" >> $GITHUB_STEP_SUMMARY
-                  echo "**Version:** ${{ github.event.release.tag_name }}" >> $GITHUB_STEP_SUMMARY
+                  if [ "${{ github.event_name }}" = "release" ]; then
+                    echo "**Version:** ${{ github.event.release.tag_name }}" >> $GITHUB_STEP_SUMMARY
+                  elif [ "${{ github.event_name }}" = "workflow_run" ]; then
+                    echo "**Version:** ${{ steps.latest_release.outputs.tag_name }}" >> $GITHUB_STEP_SUMMARY
+                  fi
                   echo "**npm Package:** [@ctrlemo/epos-react-hook](https://www.npmjs.com/package/@ctrlemo/epos-react-hook)" >> $GITHUB_STEP_SUMMARY
                   echo "" >> $GITHUB_STEP_SUMMARY
                   echo "### Installation" >> $GITHUB_STEP_SUMMARY
