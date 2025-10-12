@@ -8,7 +8,8 @@ This project uses GitHub Actions for automated continuous integration and deploy
 
 - **Triggers**: Push to master/main, Pull requests, GitHub releases
 - **Tests**: Runs on Node.js 18.x, 20.x, and 22.x
-- **Steps**: Install dependencies → Run tests → Build package → Publish to npm (on release)
+- **Steps**: Install dependencies → **Build package** → Run tests → Publish to npm (on release)
+- **Important**: Build runs before tests because tests depend on the built `dist/` files
 
 ### Auto Version Bump (`auto-version.yml`)
 
