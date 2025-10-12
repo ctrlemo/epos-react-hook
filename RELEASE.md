@@ -7,7 +7,7 @@ This project uses GitHub Actions for automated continuous integration and deploy
 ### CI/CD Pipeline (`ci-cd.yml`)
 
 - **Triggers**: Push to master/main, Pull requests, GitHub releases
-- **Tests**: Runs on Node.js 18.x, 20.x, and 22.x
+- **Tests**: Runs on Node.js 20.x and 22.x (18.x excluded due to compatibility issues)
 - **Steps**: Install dependencies → **Build package** → Run tests → Publish to npm (on release)
 - **Important**: Build runs before tests because tests depend on the built `dist/` files
 
@@ -103,3 +103,9 @@ npm pack
 - Ensure all dependencies are in package.json (not just devDependencies for build tools)
 - Check Node.js version compatibility
 - Review test output in GitHub Actions logs
+
+### Node.js Version Compatibility
+
+- **Supported**: Node.js 20.x and 22.x
+- **Not Supported**: Node.js 18.x (dependency compatibility issues)
+- **Recommended**: Node.js 20.x (LTS) for development
