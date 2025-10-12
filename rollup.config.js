@@ -1,6 +1,5 @@
 import resolve from "@rollup/plugin-node-resolve";
 import commonjs from "@rollup/plugin-commonjs";
-import babel from "@rollup/plugin-babel";
 import peerDepsExternal from "rollup-plugin-peer-deps-external";
 
 export default {
@@ -27,13 +26,5 @@ export default {
       preferBuiltins: false, // Important for browser bundles
     }),
     commonjs(),
-    babel({
-      exclude: "node_modules/**",
-      presets: [
-        ["@babel/preset-env", { modules: false }],
-        "@babel/preset-react",
-      ],
-      babelHelpers: "bundled",
-    }),
   ],
 };
