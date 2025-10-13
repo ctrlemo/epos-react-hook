@@ -1,7 +1,7 @@
 # Epson ePOS React Hook
 
 A React hook for managing Epson ePOS thermal printer connections.
-In the future this package will include more functionality for printing and other support for other ePOS printer brands.
+In the future this package will include more functionality for printing and support for other ePOS printer brands.
 
 ## Installation
 
@@ -11,7 +11,7 @@ npm install @ctrlemo/epos-react-hook
 
 ## Usage
 
-First you need to download the Epson ePOS SDK from [Epson's official website](https://support.epson.net/setupnavi/) and host the `epos-sdk.js` file in your public site directory or a CDN. You will also find the API documentation there for your particular printer model.
+First you need to download the Epson ePOS SDK from [Epson's official website](https://support.epson.net/setupnavi/){:target="\_blank"} and host the `epos-sdk.js` file in your public site directory or a CDN. You will also find the API documentation there for your particular printer model.
 
 Then you can use the hook in your React component as follows:
 
