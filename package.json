@@ -2,15 +2,29 @@
   "name": "@ctrlemo/epos-react-hook",
   "type": "module",
   "version": "1.0.4",
-  "description": "React hook for managing Epson ePOS printer connections",
+  "description": "React hook for managing Epson ePOS printer connections with TypeScript support",
   "main": "dist/index.js",
   "module": "dist/index.esm.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": {
+        "types": "./dist/index.d.ts",
+        "default": "./dist/index.esm.js"
+      },
+      "require": {
+        "types": "./dist/index.d.ts",
+        "default": "./dist/index.js"
+      }
+    }
+  },
   "files": [
     "dist/",
     "README.md"
   ],
   "scripts": {
-    "build": "rollup -c",
+    "build": "rollup -c && npm run build:types",
+    "build:types": "cp src/types/index.d.ts dist/index.d.ts",
     "dev": "rollup -c -w",
     "prepublishOnly": "npm run build",
     "test": "vitest run",
@@ -20,6 +34,7 @@
     "test:built": "npm run build && vitest run src/__tests__/",
     "test:package": "npm run test:built",
     "test:coverage": "vitest run --coverage",
+    "test:types": "tsc --noEmit --skipLibCheck src/types/index.d.ts",
     "lint": "echo \"Add linting later\"",
     "clean": "rm -rf dist",
     "release:patch": "npm version patch && git push origin master --tags",
@@ -33,7 +48,9 @@
     "epos",
     "printer",
     "thermal-printer",
-    "pos-printer"
+    "pos-printer",
+    "typescript",
+    "receipt"
   ],
   "author": "Emory Mercera <ctrlemo@gmail.com>",
   "license": "MIT",
@@ -61,6 +78,7 @@
     "react-dom": "^19.2.0",
     "rollup": "^3.0.0",
     "rollup-plugin-peer-deps-external": "^2.2.4",
+    "typescript": "^5.9.3",
     "vitest": "^3.2.4"
   },
   "publishConfig": {

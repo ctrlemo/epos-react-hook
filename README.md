@@ -45,3 +45,183 @@ function PrinterComponent() {
   );
 }
 ```
+
+## TypeScript Support
+
+This package includes full TypeScript support with comprehensive type definitions. Both JavaScript and TypeScript consumers can use the package seamlessly.
+
+### TypeScript Usage
+
+```typescript
+import {
+  useEposPrinter,
+  EposClient,
+  PRINTER_STATUS,
+  type PrinterStatus,
+  type UseEposPrinterReturn,
+  type EposClientOptions,
+} from "@ctrlemo/epos-react-hook";
+
+// Hook usage with full type safety
+function MyPrinterComponent(): JSX.Element {
+  const {
+    printer,
+    status,
+    error,
+    connect,
+    disconnect,
+    isConnected,
+  }: UseEposPrinterReturn = useEposPrinter(
+    "192.168.1.100", // IP address
+    "/epos-sdk.js", // SDK URL
+    8043 // Port (optional)
+  );
+
+  // Type-safe status handling
+  const handleStatusChange = (newStatus: PrinterStatus): void => {
+    switch (newStatus) {
+      case PRINTER_STATUS.IDLE:
+        console.log("Printer is idle");
+        break;
+      case PRINTER_STATUS.CONNECTING:
+        console.log("Connecting...");
+        break;
+      case PRINTER_STATUS.CONNECTED:
+        console.log("Connected");
+        break;
+      case PRINTER_STATUS.ERROR:
+        console.log("Error occurred");
+        break;
+    }
+  };
+
+  const handleConnect = async (): Promise<void> => {
+    try {
+      const printerInstance = await connect();
+      if (printerInstance) {
+        console.log("Connected successfully");
+      }
+    } catch (err) {
+      console.error("Connection failed:", err);
+    }
+  };
+
+  return (
+    <div>
+      <p>Status: {status}</p>
+      {error && <p>Error: {error}</p>}
+      <button onClick={handleConnect} disabled={isConnected()}>
+        Connect
+      </button>
+    </div>
+  );
+}
+
+// Direct client usage with TypeScript
+class TypeSafePrinterService {
+  private client: EposClient;
+
+  constructor(config: EposClientOptions) {
+    this.client = new EposClient(config);
+  }
+
+  async initialize(): Promise<void> {
+    await this.client.loadSdk();
+  }
+
+  async connect(): Promise<any> {
+    await this.client.connect();
+    return await this.client.createPrinter();
+  }
+
+  isConnected(): boolean {
+    return this.client.isConnected();
+  }
+
+  async disconnect(): Promise<void> {
+    await this.client.disconnect();
+  }
+}
+```
+
+### Available Types
+
+- `PrinterStatus`: Union type of all possible printer status values
+- `UseEposPrinterReturn`: Interface for the hook's return value
+- `EposClientOptions`: Configuration interface for EposClient
+- `EposEndpoint`: Interface for printer endpoint information
+
+### Type Validation
+
+The package includes utility functions for runtime type validation:
+
+```typescript
+import { isValidPrinterStatus, PRINTER_STATUS } from "@ctrlemo/epos-react-hook";
+
+// Type guard function
+function handleUnknownStatus(status: unknown) {
+  if (isValidPrinterStatus(status)) {
+    // TypeScript now knows status is PrinterStatus
+    console.log("Valid status:", status);
+  }
+}
+```
+
+## API Reference
+
+### useEposPrinter Hook
+
+```typescript
+function useEposPrinter(
+  ip: string,
+  sdkUrl: string,
+  port?: number
+): UseEposPrinterReturn;
+```
+
+**Parameters:**
+
+- `ip`: Printer IP address or hostname
+- `sdkUrl`: Path to the Epson ePOS SDK JavaScript file
+- `port`: Printer port (optional, defaults to 8043)
+
+**Returns:**
+
+- `printer`: The printer instance (null when not connected)
+- `status`: Current connection status
+- `error`: Error message (null when no error)
+- `connect()`: Function to establish connection
+- `disconnect()`: Function to close connection
+- `isConnected()`: Function to check connection status
+
+### EposClient Class
+
+```typescript
+class EposClient {
+  constructor(options: EposClientOptions);
+  loadSdk(): Promise<void>;
+  connect(): Promise<void>;
+  createPrinter(): Promise<any>;
+  getEndpoint(): EposEndpoint;
+  isConnected(): boolean;
+  disconnect(): Promise<void>;
+}
+```
+
+### Constants
+
+```typescript
+const PRINTER_STATUS: {
+  readonly IDLE: "idle";
+  readonly CONNECTING: "connecting";
+  readonly CONNECTED: "connected";
+  readonly ERROR: "error";
+};
+
+const PRINTER_STATUS_LABELS: {
+  readonly idle: "Idle";
+  readonly connecting: "Connecting...";
+  readonly connected: "Connected";
+  readonly error: "Error";
+};
+```

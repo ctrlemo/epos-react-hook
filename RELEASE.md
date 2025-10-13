@@ -18,6 +18,39 @@ This project uses GitHub Actions for automated continuous integration and deploy
   - `major:` or `BREAKING CHANGE` → Major version bump
   - `feat:` or `feature:` → Minor version bump
   - Everything else → Patch version bump
+
+## TypeScript Support (v1.1.0)
+
+### Implementation Details
+
+The package now includes comprehensive TypeScript support while maintaining full JavaScript compatibility:
+
+**TypeScript Declarations (`src/types/index.d.ts`)**:
+
+- Complete type definitions for all exports
+- Type-safe interfaces for `UseEposPrinterReturn`, `EposClientOptions`, `EposEndpoint`
+- Union types for `PrinterStatus` with proper IntelliSense support
+- Runtime type validation with `isValidPrinterStatus` type guard
+
+**Package Configuration**:
+
+- Added `"types": "dist/index.d.ts"` field in package.json
+- Configured exports map for proper ESM/CJS resolution with types
+- Added `build:types` script to copy declarations to dist folder
+- Added `test:types` script for TypeScript validation
+
+**Developer Experience**:
+
+- Full IntelliSense support in VS Code and other TypeScript-enabled editors
+- Compile-time type checking for better error catching
+- Proper autocompletion for status constants, method parameters, and return values
+- Examples provided for both JavaScript and TypeScript usage patterns
+
+**Approach Used**: Manual TypeScript declarations (Option 1)
+
+- **Pros**: Minimal build complexity, fast builds, precise control over API surface
+- **Cons**: Requires manual maintenance of type definitions
+- **Why chosen**: Small package size, ESM-first architecture, existing JavaScript codebase
 - **Output**: Creates git tag and GitHub release
 
 ## Manual Release Process
