@@ -113,6 +113,18 @@ export default class EposClient {
    * @param {number} [portOverride] - Optional override Port
    */
   async connect(ipOverride, portOverride) {
+    // Check if already connected
+    if (this.isConnected()) {
+      console.log("♻️ Already connected, reusing existing connection");
+      return;
+    }
+
+    // If there's a stale device reference, clean it up first
+    if (this.device) {
+      console.log("🧹 Cleaning up stale connection before reconnecting...");
+      await this.disconnect();
+    }
+
     await this.loadSdk();
 
     const ip = ipOverride ?? this.ip;
@@ -159,16 +171,24 @@ export default class EposClient {
         return;
       }
 
+      if (this.printer) {
+        console.log(
+          "♻️ Printer device already created, reusing existing printer object"
+        );
+        resolve(this.printer);
+        return;
+      }
+
       const type =
         deviceType ||
         this.device.DEVICE_TYPE_PRINTER ||
         window.epson.ePOSDevice.DEVICE_TYPE_PRINTER;
 
-      const handleCreate = (dev, result) => {
+      const handleCreate = (devPrinter, result) => {
         if (result === "OK") {
-          this.printer = dev;
+          this.printer = devPrinter;
           console.log(`✅ Printer device created: ${deviceId}`);
-          resolve(dev);
+          resolve(devPrinter);
         } else {
           reject(new Error("CreateDevice failed: " + result));
         }
@@ -189,7 +209,7 @@ export default class EposClient {
    */
   isConnected() {
     try {
-      return this.device ? this.device.isConnected() : false;
+      return !!(this.device && this.device?.isConnected());
     } catch (err) {
       console.warn("Error checking connection:", err);
       return false;
