@@ -11,6 +11,12 @@ import { PRINTER_STATUS, PRINTER_STATUS_LABELS } from "../constants";
  * lifecycle including SDK loading, connection establishment, device creation,
  * and cleanup.
  *
+ * Features:
+ * - Automatic connection lifecycle management
+ * - Connection reuse (avoids redundant reconnections)
+ * - Cleanup on component unmount
+ * - Real-time status tracking
+ *
  * @param {string} ip - The IP address or hostname of the Epson printer (e.g., "192.168.1.100" or "myeposprinter")
  * @param {string} sdkUrl - URL path to the Epson ePOS SDK JavaScript file. E.g., "/epos/epos-2.20.0.js" or `${process.env.PUBLIC_URL}/epos/epos-2.20.0.js`
  * @param {number} [port=8043] - The port number for the printer connection. Standard ePOS port is 8043

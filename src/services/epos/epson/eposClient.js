@@ -8,13 +8,21 @@
  * 2. Establishes network connection to printer
  * 3. Creates printer device objects for actual printing
  * 4. Handles cleanup and disconnection
+ *
+ * Features:
+ * - Connection reuse (avoids redundant reconnections)
+ * - Automatic stale connection cleanup
+ * - Printer device object reuse
  */
 export default class EposClient {
   /**
-   * @param {Object} options
-   * @param {string} options.sdkUrl - URL to Epson ePOS SDK
-   * @param {string} options.ip - Default printer IP or hostname
-   * @param {number} [options.port=8043] - Default printer port
+   * Creates an instance of EposClient
+   *
+   * @param {Object} options - Configuration options
+   * @param {string} options.sdkUrl - URL to the Epson ePOS SDK script
+   * @param {string} options.ip - Printer IP address or hostname
+   * @param {number} [options.port=8043] - Printer port (default: 8043)
+   * @throws {Error} If sdkUrl or ip are not provided
    */
   constructor({ sdkUrl, ip, port = 8043 } = {}) {
     this.device = null; // The ePOSDevice instance (network connection)
@@ -36,8 +44,8 @@ export default class EposClient {
   }
 
   /**
-   * Update SDK script URL at runtime.
-   * @param {string} sdkUrl
+   * Sets the SDK URL and marks SDK as not loaded
+   * @param {string} sdkUrl - New SDK URL
    */
   setSdkUrl(sdkUrl) {
     this.sdkUrl = sdkUrl;
@@ -45,9 +53,9 @@ export default class EposClient {
   }
 
   /**
-   * Update printer endpoint at runtime.
-   * @param {string} ip
-   * @param {number} [port]
+   * Sets the printer endpoint (IP and port)
+   * @param {string} ip - Printer IP address
+   * @param {number} [port] - Printer port (optional)
    */
   setEndpoint(ip, port) {
     this.ip = ip;
@@ -55,17 +63,19 @@ export default class EposClient {
   }
 
   /**
-   * @returns {{ip:string|null, port:number}} current endpoint
+   * Gets the current printer endpoint configuration
+   * @returns {{ip: string, port: number}} Current endpoint configuration
    */
   getEndpoint() {
     return { ip: this.ip, port: this.port };
   }
 
   /**
-   * Dynamically loads the Epson ePOS SDK JavaScript file
+   * Dynamically loads the Epson ePOS SDK JavaScript file.
+   * Handles script injection and ensures SDK is ready before proceeding.
    *
-   * Promise Resolution: SDK is loaded and window.epson is available
-   * Promise Rejection: Script failed to load or network error
+   * @returns {Promise<void>} Resolves when SDK is loaded and window.epson is available
+   * @throws {Error} If script fails to load or network error occurs
    */
   async loadSdk() {
     if (this.sdkLoaded || (window.epson && window.epson.ePOSDevice)) {
@@ -107,10 +117,17 @@ export default class EposClient {
   }
 
   /**
-   * Establishes network connection to the Epson printer
+   * Establishes network connection to the Epson printer.
    *
-   * @param {string} [ipOverride] - Optional override IP
-   * @param {number} [portOverride] - Optional override Port
+   * Behavior:
+   * - Reuses existing connection if already connected (no redundant reconnections)
+   * - Cleans up stale device references before reconnecting
+   * - Loads SDK automatically if not already loaded
+   *
+   * @param {string} [ipOverride] - Optional IP address to override constructor value
+   * @param {number} [portOverride] - Optional port to override constructor value
+   * @returns {Promise<void>} Resolves when connected
+   * @throws {Error} If SDK fails to load or connection fails
    */
   async connect(ipOverride, portOverride) {
     // Check if already connected
@@ -159,10 +176,16 @@ export default class EposClient {
   }
 
   /**
-   * Creates a printer device object for sending print commands
+   * Creates a printer device object for sending print commands.
    *
-   * @param {string} [deviceId="local_printer"]
-   * @param {*} [deviceType]
+   * Behavior:
+   * - Reuses existing printer object if already created
+   * - Must be called after connect()
+   *
+   * @param {string} [deviceId="local_printer"] - Device identifier
+   * @param {*} [deviceType] - Device type (defaults to DEVICE_TYPE_PRINTER)
+   * @returns {Promise<Object>} The printer device object
+   * @throws {Error} If device not connected or printer creation fails
    */
   async createPrinter(deviceId = "local_printer", deviceType) {
     return new Promise((resolve, reject) => {
@@ -205,7 +228,9 @@ export default class EposClient {
   }
 
   /**
-   * Synchronous check if device is connected
+   * Checks if the printer is currently connected.
+   *
+   * @returns {boolean} true if connected, false otherwise
    */
   isConnected() {
     try {
@@ -217,7 +242,10 @@ export default class EposClient {
   }
 
   /**
-   * Properly disconnects from printer and cleans up resources
+   * Disconnects from the printer and cleans up resources.
+   * Safely handles cleanup even if device or printer objects are null.
+   *
+   * @returns {Promise<void>} Resolves when disconnected and cleaned up
    */
   async disconnect() {
     return new Promise((resolve) => {
@@ -257,7 +285,9 @@ export default class EposClient {
   }
 
   /**
-   * Get the current printer device object
+   * Gets the current printer device object.
+   *
+   * @returns {Object|null} The printer device object, or null if not created
    */
   getPrinter() {
     return this.printer;
