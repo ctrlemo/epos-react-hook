@@ -1,7 +1,7 @@
 {
   "name": "@ctrlemo/epos-react-hook",
   "type": "module",
-  "version": "1.0.8",
+  "version": "1.0.9",
   "description": "React hook for managing Epson ePOS printer connections with TypeScript support",
   "main": "dist/index.js",
   "module": "dist/index.esm.js",
