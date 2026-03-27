@@ -41,7 +41,7 @@ import { PRINTER_STATUS, PRINTER_STATUS_LABELS } from "../constants";
  * const handleConnect = async () => {
  *   const printerObj = await connect();
  *   if (printerObj) {
- *     console.log("Printer connected successfully");
+ *     console.debug("Printer connected successfully");
  *   }
  * };
  *
@@ -63,18 +63,30 @@ import { PRINTER_STATUS, PRINTER_STATUS_LABELS } from "../constants";
  * @since 2.0.0
  */
 export function useEposPrinter(ip, sdkUrl, port = 8043) {
-  /**
-   * STATE MANAGEMENT
-   *
-   * These track the current state of our printer connection:
-   * - printer: The actual Epson printer device object (null when disconnected)
-   * - status: Connection lifecycle ("idle" → "connecting" → "connected" | "error")
-   * - error: Any error messages from failed operations
-   */
-  const clientRef = useRef(new EposClient({ sdkUrl, ip, port })); // Use useRef for the client instance
-  const printerRef = useRef(null); // Use useRef for the printer object
-  const [status, setStatus] = useState(PRINTER_STATUS.IDLE); // idle | connecting | connected | error
+  // STATE MANAGEMENT
+  const clientRef = useRef(null); // Will be created on mount or when config changes
+  const printerRef = useRef(null);
+  const [status, setStatus] = useState(PRINTER_STATUS.IDLE);
   const [error, setError] = useState(null);
+
+  // Create EposClient on mount or when ip/sdkUrl/port change
+  useEffect(() => {
+    clientRef.current = new EposClient({ sdkUrl, ip, port });
+    console.debug("useEposPrinter mounted, EposClient created", {
+      sdkUrl,
+      ip,
+      port,
+    });
+    return () => {
+      if (clientRef.current) {
+        console.debug(
+          "useEposPrinter unmounted, cleaning up printer connection",
+        );
+        clientRef.current.disconnect();
+        clientRef.current = null;
+      }
+    };
+  }, [ip, sdkUrl, port]);
 
   /**
    * CONNECT FUNCTION
@@ -92,30 +104,28 @@ export function useEposPrinter(ip, sdkUrl, port = 8043) {
    *
    * @returns {Promise<Object|null>} Promise that resolves to printer device object on success, null on failure
    */
-  const connect = useCallback(async () => {
-    setStatus(PRINTER_STATUS.CONNECTING); // UI can show "Connecting..." spinner
-    setError(null); // Clear any previous errors
-
+  async function connect() {
+    setStatus(PRINTER_STATUS.CONNECTING);
+    setError(null);
     try {
-      // Step 1: Establish network connection to printer
+      if (!clientRef.current) {
+        throw new Error(
+          "EposClient not initialized. This is a bug: clientRef should always be created by useEffect.",
+        );
+      }
       await clientRef.current.connect();
-
-      // Step 2: Create printer device object for sending commands
       const printerObj = await clientRef.current.createPrinter();
-
-      // Step 3: Update React state with successful connection
-      printerRef.current = printerObj; // Store printer object for use
-      setStatus(PRINTER_STATUS.CONNECTED); // UI can show "Connected" status
-      return printerObj; // Return printer object for immediate use if needed
+      printerRef.current = printerObj;
+      setStatus(PRINTER_STATUS.CONNECTED);
+      return printerObj;
     } catch (err) {
-      // Handle any errors in the connection process
       console.error("Printer connection failed:", err);
-      setError(err.message); // Store error message for UI
-      setStatus(PRINTER_STATUS.ERROR); // UI can show error state
-      printerRef.current = null; // Ensure printer is null on failure
-      return null; // Indicate failure to caller
+      setError(err.message);
+      setStatus(PRINTER_STATUS.ERROR);
+      printerRef.current = null;
+      return null;
     }
-  }, []); // Dependencies: recreate if these change
+  }
 
   /**
    * DISCONNECT FUNCTION
@@ -128,9 +138,12 @@ export function useEposPrinter(ip, sdkUrl, port = 8043) {
    * @returns {Promise<void>} Promise that resolves when disconnection is complete
    */
   const disconnect = useCallback(async () => {
-    await clientRef.current.disconnect(); // Clean up resources in EposClient
-    printerRef.current = null; // Clear printer reference
-    setStatus(PRINTER_STATUS.IDLE); // Reset to initial state
+    if (clientRef.current) {
+      await clientRef.current.disconnect();
+      // clientRef.current = null;
+    }
+    printerRef.current = null;
+    setStatus(PRINTER_STATUS.IDLE);
   }, []);
 
   /**
@@ -160,10 +173,7 @@ export function useEposPrinter(ip, sdkUrl, port = 8043) {
    * Ensures we don't leave dangling printer connections when component unmounts.
    * The empty dependency array [] means this effect only runs on mount/unmount.
    */
-  useEffect(() => {
-    const clientInstance = clientRef.current;
-    return () => clientInstance.disconnect(); // Cleanup function runs on unmount
-  }, []);
+  // (Lifecycle handled above)
 
   /**
    * RETURN OBJECT
@@ -176,6 +186,9 @@ export function useEposPrinter(ip, sdkUrl, port = 8043) {
     error, // Error message (if any)
     connect, // Function to initiate connection
     disconnect, // Function to close connection
-    isConnected: clientRef.current.isConnected.bind(clientRef.current), // Bound method for checking status
+    isConnected: () => {
+      if (!clientRef.current) return false;
+      return clientRef.current.isConnected();
+    },
   };
 }

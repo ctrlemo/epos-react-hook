@@ -13,7 +13,11 @@
  * - Connection reuse (avoids redundant reconnections)
  * - Automatic stale connection cleanup
  * - Printer device object reuse
+
  */
+
+// Unique instance counter for debugging
+let EPOS_CLIENT_ID = 0;
 export default class EposClient {
   /**
    * Creates an instance of EposClient
@@ -40,7 +44,18 @@ export default class EposClient {
     this.ip = ip;
     this.port = port;
 
+    this._id = ++EPOS_CLIENT_ID;
     this.sdkLoaded = false; // Prevent multiple SDK loads
+
+    // Debug: log instance creation
+    console.debug(`[EposClient #${this._id}] constructor`, {
+      sdkUrl,
+      ip,
+      port,
+      instance: this,
+      device: this.device,
+      printer: this.printer,
+    });
   }
 
   /**
@@ -85,7 +100,7 @@ export default class EposClient {
 
     return new Promise((resolve, reject) => {
       const existingScript = document.querySelector(
-        `script[src="${this.sdkUrl}"]`
+        `script[src="${this.sdkUrl}"]`,
       );
 
       if (existingScript) {
@@ -103,7 +118,7 @@ export default class EposClient {
 
       script.onload = () => {
         this.sdkLoaded = true;
-        console.log("✅ Epson SDK loaded");
+        console.debug("✅ Epson SDK loaded");
         resolve();
       };
 
@@ -130,15 +145,36 @@ export default class EposClient {
    * @throws {Error} If SDK fails to load or connection fails
    */
   async connect(ipOverride, portOverride) {
+    // Debug: log connect call and current state
+    console.debug(`[EposClient #${this._id}] connect called`, {
+      thisDevice: this.device,
+      thisPrinter: this.printer,
+      isConnected: this.isConnected(),
+      ipOverride,
+      portOverride,
+    });
+
     // Check if already connected
     if (this.isConnected()) {
-      console.log("♻️ Already connected, reusing existing connection");
+      console.debug(
+        `♻️ [EposClient #${this._id}] Already connected, reusing existing connection`,
+        {
+          device: this.device,
+          printer: this.printer,
+        },
+      );
       return;
     }
 
     // If there's a stale device reference, clean it up first
     if (this.device) {
-      console.log("🧹 Cleaning up stale connection before reconnecting...");
+      console.debug(
+        `🧹 [EposClient #${this._id}] Cleaning up stale connection before reconnecting...`,
+        {
+          device: this.device,
+          printer: this.printer,
+        },
+      );
       await this.disconnect();
     }
 
@@ -149,7 +185,7 @@ export default class EposClient {
 
     if (!ip) {
       throw new Error(
-        "Printer IP not provided. Pass in constructor, setEndpoint(), or connect(ip, port)."
+        "Printer IP not provided. Pass in constructor, setEndpoint(), or connect(ip, port).",
       );
     }
 
@@ -160,17 +196,21 @@ export default class EposClient {
       }
 
       this.device = new window.epson.ePOSDevice();
+      console.debug("[EposClient] new ePOSDevice created", {
+        device: this.device,
+      });
 
       const handleConnect = (result) => {
         if (result === "OK" || result === "SSL_CONNECT_OK") {
-          console.log(`✅ Connected to printer at ${ip}:${port}`);
+          console.debug(`✅ Connected to printer at ${ip}:${port}`);
           resolve();
         } else {
+          console.warn("[EposClient] Failed to connect", { result });
           reject(new Error("Failed to connect: " + result));
         }
       };
 
-      console.log(`🔗 Attempting to connect to printer at ${ip}:${port}`);
+      console.debug(`🔗 Attempting to connect to printer at ${ip}:${port}`);
       this.device.connect(ip, port, handleConnect, { eposprint: true });
     });
   }
@@ -188,15 +228,23 @@ export default class EposClient {
    * @throws {Error} If device not connected or printer creation fails
    */
   async createPrinter(deviceId = "local_printer", deviceType) {
+    console.debug(`[EposClient #${this._id}] createPrinter called`, {
+      device: this.device,
+      printer: this.printer,
+      deviceId,
+      deviceType,
+    });
     return new Promise((resolve, reject) => {
       if (!this.device) {
+        console.warn("[EposClient] createPrinter: Device not connected");
         reject(new Error("Device not connected."));
         return;
       }
 
       if (this.printer) {
-        console.log(
-          "♻️ Printer device already created, reusing existing printer object"
+        console.debug(
+          `♻️ [EposClient #${this._id}] Printer device already created, reusing existing printer object`,
+          { printer: this.printer },
         );
         resolve(this.printer);
         return;
@@ -210,19 +258,26 @@ export default class EposClient {
       const handleCreate = (devPrinter, result) => {
         if (result === "OK") {
           this.printer = devPrinter;
-          console.log(`✅ Printer device created: ${deviceId}`);
+          console.debug(`✅ Printer device created: ${deviceId}`, {
+            devPrinter,
+          });
           resolve(devPrinter);
         } else {
+          console.warn("[EposClient] createPrinter: CreateDevice failed", {
+            result,
+          });
           reject(new Error("CreateDevice failed: " + result));
         }
       };
 
-      console.log(`🖨️ Attempting to create printer device: ${deviceId}`);
+      console.debug(
+        `[EposClient #${this._id}] 🖨️ Attempting to create printer device: ${deviceId}`,
+      );
       this.device.createDevice(
         deviceId,
         type,
         { crypto: false, buffer: false },
-        handleCreate
+        handleCreate,
       );
     });
   }
@@ -248,8 +303,15 @@ export default class EposClient {
    * @returns {Promise<void>} Resolves when disconnected and cleaned up
    */
   async disconnect() {
+    console.debug(`[EposClient #${this._id}] disconnect called`, {
+      device: this.device,
+      printer: this.printer,
+    });
     return new Promise((resolve) => {
       if (!this.device) {
+        console.debug(
+          `[EposClient #${this._id}] disconnect: No device to disconnect`,
+        );
         resolve();
         return;
       }
@@ -257,17 +319,24 @@ export default class EposClient {
       const cleanup = () => {
         try {
           this.device.disconnect();
-          console.log("🔌 Disconnected from ePOS device");
+          console.debug(
+            `[EposClient #${this._id}] 🔌 Disconnected from ePOS device`,
+          );
         } catch (err) {
           console.warn("Disconnect error:", err);
         }
         this.device = null;
         this.printer = null;
+        console.debug(
+          `[EposClient #${this._id}] disconnect: device and printer set to null`,
+        );
         resolve();
       };
 
       const handleDelete = () => {
-        console.log("🧹 Printer device deleted successfully");
+        console.debug(
+          `[EposClient #${this._id}] 🧹 Printer device deleted successfully`,
+        );
         cleanup();
       };
 
