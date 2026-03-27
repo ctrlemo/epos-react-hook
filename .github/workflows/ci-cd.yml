@@ -1,118 +1,121 @@
 name: CI/CD Pipeline
 
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
 on:
-    pull_request:
-        branches: [master, main]
-    release:
-        types: [published, created, released, edited] # Added more event types
-    workflow_run: # Also trigger when auto-version completes
-        workflows: ["Auto Version Bump"]
-        types: [completed]
-        branches: [master, main]
+  pull_request:
+    branches: [master, main]
+  release:
+    types: [published, created, released, edited] # Added more event types
+  workflow_run: # Also trigger when auto-version completes
+    workflows: ["Auto Version Bump"]
+    types: [completed]
+    branches: [master, main]
 
 jobs:
-    test:
-        runs-on: ubuntu-latest
+  test:
+    runs-on: ubuntu-latest
 
-        strategy:
-            matrix:
-                node-version: [20.x, 22.x]
+    strategy:
+      matrix:
+        node-version: [20.x, 22.x, 24.x]
 
-        steps:
-            - name: Checkout code
-              uses: actions/checkout@v4
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
 
-            - name: Use Node.js ${{ matrix.node-version }}
-              uses: actions/setup-node@v4
-              with:
-                  node-version: ${{ matrix.node-version }}
-                  cache: "npm"
+      - name: Use Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: "npm"
 
-            - name: Install dependencies
-              run: npm ci
+      - name: Install dependencies
+        run: npm ci
 
-            - name: Build package
-              run: npm run build
+      - name: Build package
+        run: npm run build
 
-            - name: Run tests
-              run: npm test
+      - name: Run tests
+        run: npm test
 
-            - name: Upload coverage reports
-              if: matrix.node-version == '20.x'
-              uses: codecov/codecov-action@v3
-              with:
-                  file: ./coverage/lcov.info
-                  flags: unittests
-                  name: codecov-umbrella
-                  fail_ci_if_error: false
+      - name: Upload coverage reports
+        if: matrix.node-version == '20.x'
+        uses: codecov/codecov-action@v3
+        with:
+          file: ./coverage/lcov.info
+          flags: unittests
+          name: codecov-umbrella
+          fail_ci_if_error: false
 
-    publish:
-        needs: test
-        runs-on: ubuntu-latest
-        if: |
-            (github.event_name == 'release') ||
-            (github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success')
+  publish:
+    needs: test
+    runs-on: ubuntu-latest
+    if: |
+      (github.event_name == 'release') ||
+      (github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success')
 
-        steps:
-            - name: Checkout code
-              uses: actions/checkout@v4
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
 
-            - name: Use Node.js 20.x
-              uses: actions/setup-node@v4
-              with:
-                  node-version: "20.x"
-                  registry-url: "https://registry.npmjs.org"
-                  cache: "npm"
+      - name: Use Node.js 24.x
+        uses: actions/setup-node@v4
+        with:
+          node-version: "24.x"
+          registry-url: "https://registry.npmjs.org"
+          cache: "npm"
 
-            - name: Install dependencies
-              run: npm ci
+      - name: Install dependencies
+        run: npm ci
 
-            - name: Build package
-              run: npm run build
+      - name: Build package
+        run: npm run build
 
-            - name: Run tests
-              run: npm test
+      - name: Run tests
+        run: npm test
 
-            - name: Debug Event Info
-              run: |
-                  echo "Event name: ${{ github.event_name }}"
-                  if [ "${{ github.event_name }}" = "release" ]; then
-                    echo "Release action: ${{ github.event.action }}"
-                    echo "Release tag: ${{ github.event.release.tag_name }}"
-                    echo "Release draft: ${{ github.event.release.draft }}"
-                    echo "Release prerelease: ${{ github.event.release.prerelease }}"
-                  elif [ "${{ github.event_name }}" = "workflow_run" ]; then
-                    echo "Workflow run conclusion: ${{ github.event.workflow_run.conclusion }}"
-                    echo "Workflow run name: ${{ github.event.workflow_run.name }}"
-                  fi
+      - name: Debug Event Info
+        run: |
+          echo "Event name: ${{ github.event_name }}"
+          if [ "${{ github.event_name }}" = "release" ]; then
+            echo "Release action: ${{ github.event.action }}"
+            echo "Release tag: ${{ github.event.release.tag_name }}"
+            echo "Release draft: ${{ github.event.release.draft }}"
+            echo "Release prerelease: ${{ github.event.release.prerelease }}"
+          elif [ "${{ github.event_name }}" = "workflow_run" ]; then
+            echo "Workflow run conclusion: ${{ github.event.workflow_run.conclusion }}"
+            echo "Workflow run name: ${{ github.event.workflow_run.name }}"
+          fi
 
-            - name: Get latest release info (for workflow_run trigger)
-              if: github.event_name == 'workflow_run'
-              id: latest_release
-              run: |
-                  LATEST_RELEASE=$(curl -s -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
-                    "https://api.github.com/repos/${{ github.repository }}/releases/latest")
-                  TAG_NAME=$(echo "$LATEST_RELEASE" | jq -r '.tag_name')
-                  echo "Latest release tag: $TAG_NAME"
-                  echo "tag_name=$TAG_NAME" >> $GITHUB_OUTPUT
+      - name: Get latest release info (for workflow_run trigger)
+        if: github.event_name == 'workflow_run'
+        id: latest_release
+        run: |
+          LATEST_RELEASE=$(curl -s -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+            "https://api.github.com/repos/${{ github.repository }}/releases/latest")
+          TAG_NAME=$(echo "$LATEST_RELEASE" | jq -r '.tag_name')
+          echo "Latest release tag: $TAG_NAME"
+          echo "tag_name=$TAG_NAME" >> $GITHUB_OUTPUT
 
-            - name: Publish to npm
-              run: npm publish
-              env:
-                  NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+      - name: Publish to npm
+        run: npm publish
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
-            - name: Publish Summary
-              run: |
-                  echo "## 📦 Package Published Successfully!" >> $GITHUB_STEP_SUMMARY
-                  echo "" >> $GITHUB_STEP_SUMMARY
-                  if [ "${{ github.event_name }}" = "release" ]; then
-                    echo "**Version:** ${{ github.event.release.tag_name }}" >> $GITHUB_STEP_SUMMARY
-                  elif [ "${{ github.event_name }}" = "workflow_run" ]; then
-                    echo "**Version:** ${{ steps.latest_release.outputs.tag_name }}" >> $GITHUB_STEP_SUMMARY
-                  fi
-                  echo "**npm Package:** [@ctrlemo/epos-react-hook](https://www.npmjs.com/package/@ctrlemo/epos-react-hook)" >> $GITHUB_STEP_SUMMARY
-                  echo "" >> $GITHUB_STEP_SUMMARY
-                  echo "### Installation" >> $GITHUB_STEP_SUMMARY
-                  echo "\`\`\`bash" >> $GITHUB_STEP_SUMMARY
-                  echo "npm install @ctrlemo/epos-react-hook@latest" >> $GITHUB_STEP_SUMMARY
-                  echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+      - name: Publish Summary
+        run: |
+          echo "## 📦 Package Published Successfully!" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          if [ "${{ github.event_name }}" = "release" ]; then
+            echo "**Version:** ${{ github.event.release.tag_name }}" >> $GITHUB_STEP_SUMMARY
+          elif [ "${{ github.event_name }}" = "workflow_run" ]; then
+            echo "**Version:** ${{ steps.latest_release.outputs.tag_name }}" >> $GITHUB_STEP_SUMMARY
+          fi
+          echo "**npm Package:** [@ctrlemo/epos-react-hook](https://www.npmjs.com/package/@ctrlemo/epos-react-hook)" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Installation" >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`bash" >> $GITHUB_STEP_SUMMARY
+          echo "npm install @ctrlemo/epos-react-hook@latest" >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
